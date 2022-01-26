@@ -73,37 +73,6 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, intent);
     }
 
-    private void ensureFfmpeg() {
-        File filesDir = getFilesDir();
-        File ffmpegFile = new File(filesDir, "ffmpeg");
-        if (!ffmpegFile.exists()) {
-            AssetManager assetManager = getAssets();
-            try {
-                InputStream ffmpegInputStream = assetManager.open("ffmpeg.zip");
-                File ffmpegZip = new File(filesDir, "ffmpeg.zip");
-                IoUtil.copy(ffmpegInputStream, new FileOutputStream(ffmpegZip));
-                ZipUtil.unzip(ffmpegZip, filesDir);
-                ffmpegZip.delete();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        File ffprobeFile = new File(filesDir, "ffprobe");
-        if (!ffprobeFile.exists()) {
-            AssetManager assetManager = getAssets();
-            try {
-                InputStream ffprobeInputStream = assetManager.open("ffprobe.zip");
-                File ffprobeZip = new File(filesDir, "ffprobe.zip");
-                IoUtil.copy(ffprobeInputStream, new FileOutputStream(ffprobeZip));
-                ZipUtil.unzip(ffprobeZip, filesDir);
-                ffprobeZip.delete();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     private void transcodeVideo() {
         Log.e("tag", Arrays.toString(Build.SUPPORTED_ABIS));
         FFmpeg ffmpeg = FFmpeg.getInstance(this);
