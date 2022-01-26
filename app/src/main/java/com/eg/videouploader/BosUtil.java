@@ -9,9 +9,9 @@ import java.io.File;
 public class BosUtil {
     private static BosClient client;
     private static final String BUCKET_NAME = "video-beijing";
-    private static final String BASE_URL = "https://video-beijing.cdn.bcebos.com";
+    private static final String BASE_URL = "https://video-beijing.cdn.bcebos.com/";
 
-    public static void initClient() {
+    private static void initClient() {
         BosClientConfiguration config = new BosClientConfiguration();
         config.setCredentials(new DefaultBceCredentials(
                 "ace034ef06b040c0b578a668f292f493",
@@ -20,7 +20,7 @@ public class BosUtil {
         client = new BosClient(config);
     }
 
-    public static BosClient getClient() {
+    private static BosClient getClient() {
         if (client == null) {
             initClient();
         }
@@ -35,7 +35,7 @@ public class BosUtil {
      * @return
      */
     public static String uploadObjectStorage(File file, String objectKey) {
-        client.putObject(BUCKET_NAME, objectKey, file);
+        getClient().putObject(BUCKET_NAME, objectKey, file);
         return BASE_URL + objectKey;
     }
 }
