@@ -2,32 +2,24 @@ package com.eg.videouploader;
 
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.github.hiteshsondhi88.libffmpeg.ExecuteBinaryResponseHandler;
-import com.github.hiteshsondhi88.libffmpeg.FFmpeg;
-import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegCommandAlreadyRunningException;
+import com.arthenica.mobileffmpeg.FFmpeg;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.ZipUtil;
 
 public class MainActivity extends AppCompatActivity {
     private TextView tv_info;
@@ -40,8 +32,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tv_info = findViewById(R.id.tv_info);
-
-        ensureFfmpeg();
 
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.INTERNAL_CONTENT_URI);
 
@@ -61,9 +51,10 @@ public class MainActivity extends AppCompatActivity {
             InputStream inputStream;
             try {
                 inputStream = contentResolver.openInputStream(uri);
-                File videoFile = new File(getCacheDir(), IdUtil.fastSimpleUUID() + "." + ext);
+                String videoId = IdUtil.fastSimpleUUID();
+                File videoFile = new File(getCacheDir(), videoId + "." + ext);
                 IoUtil.copy(inputStream, new FileOutputStream(videoFile));
-                handleVideoFile(videoFile);
+                handleVideoFile(videoFile, videoId);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -73,28 +64,25 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, intent);
     }
 
-    private void transcodeVideo() {
-        Log.e("tag", Arrays.toString(Build.SUPPORTED_ABIS));
-        FFmpeg ffmpeg = FFmpeg.getInstance(this);
-        String[] cmd = {"-version"};
-        try {
-            ffmpeg.execute(cmd, new ExecuteBinaryResponseHandler() {
-                @Override
-                public void onProgress(String message) {
-                    Log.e("tag", message);
-                }
+    private void transcodeVideo(File sourceFile, String videoId) {
+        //-i "/data/user/0/com.eg.videouploader/cache/16cc33a300fb4e348741d99f9ccbd25a.mp4"
+        // -codec copy -vbsf h264_mp4toannexb -map 0
+        // -f segment -segment_list "/data/user/0/com.eg.videouploader/cache/16cc33a300fb4e348741d99f9ccbd25a.mp4.m3u8"
+        // -segment_time 1 "/data/user/0/com.eg.videouploader/cache/bca67fbc59de42fcbc97a58491d0f6c9-%d.ts"
 
-                @Override
-                public void onFinish() {
-                }
-            });
-        } catch (FFmpegCommandAlreadyRunningException e) {
-            e.printStackTrace();
-        }
+        File baseFolder = sourceFile.getParentFile();
+        File transcodeFolder = new File(baseFolder, "transcode");
+        File m3u8File = new File(transcodeFolder, videoId + ".m3u8");
+        String cmd = "-i \"" + sourceFile.getAbsolutePath()
+                + "\" -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list \""
+                + m3u8File.getAbsolutePath() + " -segment_time 1 \""
+                + transcodeFolder.getAbsolutePath() + File.separator + videoId + "-%d.ts\"";
+        tv_info.setText(cmd);
+        FFmpeg.execute(cmd);
     }
 
-    private void handleVideoFile(File videoFile) {
-        transcodeVideo();
+    private void handleVideoFile(File sourceFile, String videoId) {
+        transcodeVideo(sourceFile, videoId);
         new Thread(() -> {
 //            BosUtil.uploadObjectStorage(videoFile, "test/" + videoFile.getName());
 //            videoFile.delete();
