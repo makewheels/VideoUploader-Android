@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             InputStream inputStream;
             try {
                 inputStream = contentResolver.openInputStream(uri);
-                String videoId = IdUtil.fastSimpleUUID();
+                String videoId = IdUtil.randomUUID();
                 File videoFile = new File(getCacheDir(), videoId + "." + ext);
                 tv_info.setText(uri.toString() + "\n" + videoFile.getPath());
                 IoUtil.copy(inputStream, new FileOutputStream(videoFile));
